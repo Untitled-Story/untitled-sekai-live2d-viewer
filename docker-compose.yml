@@ -1,0 +1,9 @@
+services:
+  live2d-viewer:
+    build:
+      context: .
+      args:
+        NEXT_PUBLIC_SERVER_URL: ${NEXT_PUBLIC_SERVER_URL}
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
