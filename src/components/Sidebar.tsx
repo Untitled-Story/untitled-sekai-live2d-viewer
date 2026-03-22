@@ -86,8 +86,8 @@ export function Sidebar({
     <aside
       className={`flex flex-col border-r border-border bg-surface select-none
         fixed inset-y-0 left-0 z-40 w-[85vw] max-w-80 transition-transform duration-200
-        md:relative md:z-auto md:w-80 md:transition-[width]
-        ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0 md:w-0"}
+        md:relative md:z-auto md:max-w-80 md:transition-[width] md:duration-200
+        ${open ? "translate-x-0 md:w-80" : "-translate-x-full md:translate-x-0 md:w-0"}
         overflow-hidden shrink-0`}
     >
       {/* Header */}

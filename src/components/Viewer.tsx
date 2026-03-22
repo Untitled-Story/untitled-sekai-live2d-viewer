@@ -8,7 +8,7 @@ import {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import { PanelLeft, Loader2, AlertCircle } from "lucide-react";
+import { PanelLeft, Loader2, AlertCircle, Camera } from "lucide-react";
 import type { ModelEntry, ModelInfo } from "@/app/page";
 import { resolveMotionData } from "@/lib/motion";
 
@@ -56,6 +56,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         autoDensity: true,
         resolution: window.devicePixelRatio,
         backgroundAlpha: 0,
+        preserveDrawingBuffer: true,
       });
       if (disposed) {
         app.destroy(true);
@@ -124,7 +125,9 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
 
         // Step 1: Fetch model3.json
         const res = await fetch(modelJsonUrl);
-        if (!res.ok) throw new Error(`Failed to fetch model: HTTP ${res.status}`);
+        if (!res.ok) { // noinspection ExceptionCaughtLocallyJS
+          throw new Error(`Failed to fetch model: HTTP ${res.status}`);
+        }
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const model3Json: any = await res.json();
 
@@ -281,6 +284,31 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <p className="text-muted text-sm">Select and load a model to preview</p>
         </div>
+      )}
+
+      {/* Screenshot button */}
+      {selectedModel && !modelLoading && !modelError && (
+        <button
+          onClick={() => {
+            const app = appRef.current;
+            if (!app) return;
+            const canvas = app.canvas as HTMLCanvasElement;
+            canvas.toBlob((blob) => {
+              if (!blob) return;
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `${selectedModel.name}.png`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }, "image/png");
+          }}
+          className="absolute bottom-3 right-3 p-2.5 rounded-md bg-surface/80 backdrop-blur-sm border border-border text-muted hover:bg-surface hover:text-foreground transition-colors cursor-pointer"
+          style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          aria-label="Screenshot"
+        >
+          <Camera size={16} />
+        </button>
       )}
 
       {/* Model info badge — click to copy */}
