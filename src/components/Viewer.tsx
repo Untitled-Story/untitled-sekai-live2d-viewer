@@ -186,6 +186,9 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
           h: live2dModel.height,
         };
 
+        // Sync canvas size before positioning
+        app.resize();
+
         // Center and fit
         const scale =
           Math.min(
