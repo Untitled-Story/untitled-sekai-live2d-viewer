@@ -1,36 +1,79 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Untitled Sekai Live2D Viewer
+
+A small Next.js viewer for browsing and previewing Project Sekai Live2D models.
+
+## Features
+
+- Browse available models from a local asset server
+- Load and preview Live2D models in the browser
+- Play motions and facials
+- Download the selected model as a ZIP
+- Export motions into `motions/*.motion3.json`
+- Capture screenshots from the viewer
+
+## Tech Stack
+
+- Next.js 16
+- React 19
+- PixiJS 8
+- `untitled-pixi-live2d-engine`
+- `fflate`
 
 ## Getting Started
 
-First, run the development server:
+Install dependencies:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Start the development server:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Build for production:
 
-## Learn More
+```bash
+pnpm build
+```
 
-To learn more about Next.js, take a look at the following resources:
+Start the production server:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+pnpm start
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Environment
 
-## Deploy on Vercel
+The app reads the asset server URL from `NEXT_PUBLIC_SERVER_URL`.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+If it is not set, it defaults to:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```text
+http://127.0.0.1:8080
+```
+
+Example:
+
+```bash
+NEXT_PUBLIC_SERVER_URL=http://127.0.0.1:8080 pnpm dev
+```
+
+## ZIP Export
+
+When downloading a model as ZIP:
+
+- the `.model3.json` file is placed at the ZIP root
+- model assets are included with normalized relative paths
+- motions are exported into `motions/*.motion3.json`
+- the exported `model3.json` is rewritten to register those motions
+
+## Notes
+
+This project depends on a compatible local model server that exposes:
+
+- `/model_list.json`
+- `/model/<path>/<file>`
+- `/motion/<path>/...`
