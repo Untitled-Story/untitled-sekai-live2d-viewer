@@ -9,17 +9,20 @@ import {
   Box,
   Play,
   Download,
+  FolderOpen,
   Smile,
   Clapperboard,
   Copy,
   Check,
 } from "lucide-react";
-import type { ModelEntry, ModelInfo } from "@/app/page";
+import type { DownloadState, ModelEntry, ModelInfo } from "@/app/page";
 
 interface SidebarProps {
   models: ModelEntry[];
   selectedModel: ModelEntry | null;
   onLoadModel: (model: ModelEntry) => void;
+  onDownloadZip: () => void;
+  downloadState: DownloadState;
   modelInfo: ModelInfo | null;
   onApplyMotion: (group: string, index: number) => void;
   fetchLoading: boolean;
@@ -44,6 +47,8 @@ export function Sidebar({
   models,
   selectedModel,
   onLoadModel,
+  onDownloadZip,
+  downloadState,
   modelInfo,
   onApplyMotion,
   fetchLoading,
@@ -219,22 +224,53 @@ export function Sidebar({
                 </div>
 
                 <div className="px-4 py-2.5 border-t border-border" style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}>
-                  <button
-                    onClick={() => {
-                      if (pendingModel) {
-                        onLoadModel(pendingModel);
-                        setSelectedMotion(-1);
-                        setSelectedFacial(-1);
-                        setMotionFilter("");
-                        setFacialFilter("");
-                      }
-                    }}
-                    disabled={!pendingModel}
-                    className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm font-medium bg-accent text-white rounded-md hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        if (pendingModel) {
+                          onLoadModel(pendingModel);
+                          setSelectedMotion(-1);
+                          setSelectedFacial(-1);
+                          setMotionFilter("");
+                          setFacialFilter("");
+                        }
+                      }}
+                      disabled={!pendingModel}
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm font-medium bg-accent text-white rounded-md hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                    >
+                      <FolderOpen size={14} />
+                      Load
+                    </button>
+                    <button
+                      onClick={onDownloadZip}
+                      disabled={!selectedModel || downloadState.status === "loading"}
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm font-medium border border-border text-foreground rounded-md hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      aria-label="Download selected model as ZIP"
+                    >
+                      {downloadState.status === "loading" ? (
+                        <Loader2 size={14} className="animate-spin" />
+                      ) : downloadState.status === "success" ? (
+                        <Check size={14} className="text-success" />
+                      ) : (
+                        <Download size={14} />
+                      )}
+                      ZIP
+                    </button>
+                  </div>
+                  <div
+                    className={`grid transition-all duration-300 ${
+                      downloadState.status === "idle"
+                        ? "mt-0 grid-rows-[0fr] opacity-0 -translate-y-1 ease-in"
+                        : "mt-2 grid-rows-[1fr] opacity-100 translate-y-0 ease-out"
+                    }`}
+                    aria-live="polite"
                   >
-                    <Download size={14} />
-                    Load
-                  </button>
+                    <div className="overflow-hidden">
+                      <p className="text-[11px] leading-4 text-muted pb-0.5">
+                        {downloadState.message}
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </>
             )}

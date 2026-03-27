@@ -1,5 +1,5 @@
 {
-  "name": "ovo-model-viewer",
+  "name": "untitled-sekai-live2d-viewer",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -11,6 +11,7 @@
   "dependencies": {
     "@pixi/sound": "^6.0.1",
     "agentation": "^2.3.3",
+    "fflate": "^0.8.2",
     "lucide-react": "^0.577.0",
     "next": "16.2.1",
     "pixi.js": "^8.17.1",

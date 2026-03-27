@@ -12,6 +12,8 @@ import { PanelLeft, Loader2, AlertCircle, Camera } from "lucide-react";
 import type { ModelEntry, ModelInfo } from "@/app/page";
 import { resolveMotionData } from "@/lib/motion";
 
+import type { Live2DModel } from "untitled-pixi-live2d-engine";
+
 export interface ViewerHandle {
   loadModel: (entry: ModelEntry) => void;
   playMotion: (group: string, index: number) => void;
@@ -32,7 +34,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<import("pixi.js").Application | null>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const modelRef = useRef<any>(null);
+  const modelRef = useRef<Live2DModel | null>(null);
   const originalSizeRef = useRef<{ w: number; h: number } | null>(null);
   const [modelLoading, setModelLoading] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
@@ -228,7 +230,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
   const playMotion = useCallback((group: string, index: number) => {
     const model = modelRef.current;
     if (!model) return;
-    model.motion(group, index);
+    model.motion(group, index, 3);
   }, []);
 
   useImperativeHandle(ref, () => ({
