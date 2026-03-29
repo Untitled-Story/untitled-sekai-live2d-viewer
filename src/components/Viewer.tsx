@@ -180,6 +180,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         const live2dModel = await Live2DModel.from(model3Json, {
           autoFocus: false,
           autoHitTest: false,
+          breathDepth: 0.3
         });
 
         // Save original dimensions for resize calculations
