@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Loader2,
   AlertCircle,
@@ -29,6 +29,8 @@ interface SidebarProps {
   fetchError: string | null;
   open: boolean;
   onToggle: () => void;
+  activeMotionName: string | null;
+  activeFacialName: string | null;
 }
 
 type Tab = "model" | "animation";
@@ -55,6 +57,8 @@ export function Sidebar({
   fetchError,
   open,
   onToggle,
+  activeMotionName,
+  activeFacialName,
 }: SidebarProps) {
   const [activeTab, setActiveTab] = useState<Tab>("model");
   const [animSub, setAnimSub] = useState<AnimSub>("motion");
@@ -65,6 +69,32 @@ export function Sidebar({
   const [motionFilter, setMotionFilter] = useState("");
   const [facialFilter, setFacialFilter] = useState("");
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  // Sync pendingModel when model is loaded externally (e.g. share link)
+  useEffect(() => {
+    if (selectedModel) setPendingModel(selectedModel);
+  }, [selectedModel]);
+
+  // Sync sidebar selection from share link / external state
+  useEffect(() => {
+    if (!modelInfo) return;
+    if (activeMotionName) {
+      const idx = modelInfo.motions.indexOf(activeMotionName);
+      if (idx >= 0) {
+        setSelectedMotion(idx);
+        setActiveTab("animation");
+        setAnimSub("motion");
+      }
+    }
+    if (activeFacialName) {
+      const idx = modelInfo.facials.indexOf(activeFacialName);
+      if (idx >= 0) {
+        setSelectedFacial(idx);
+        setActiveTab("animation");
+        setAnimSub("facial");
+      }
+    }
+  }, [modelInfo, activeMotionName, activeFacialName]);
   const [copiedModel, setCopiedModel] = useState<string | null>(null);
 
   const filteredModels = models.filter((m) => matchesFilter(m.name, filter));

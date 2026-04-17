@@ -17,6 +17,7 @@ import type { Live2DModel } from "untitled-pixi-live2d-engine";
 export interface ViewerHandle {
   loadModel: (entry: ModelEntry) => void;
   playMotion: (group: string, index: number) => void;
+  playParallelMotion: (motions: { group: string; index: number }[]) => void;
 }
 
 interface ViewerProps {
@@ -114,28 +115,41 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
     model.y = sh * (0.5 + 0.3);
   }, []);
 
-  // Refit model on container resize — debounced to one rAF per burst
+  // Refit model on container resize
+  // During transition: reposition model every rAF using container size (lightweight)
+  // After transition settles: call app.resize() once (heavyweight canvas resize)
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
     let rafId: number | null = null;
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
     const ro = new ResizeObserver(() => {
+      // Lightweight: reposition model every frame using container dimensions
       if (rafId !== null) cancelAnimationFrame(rafId);
       rafId = requestAnimationFrame(() => {
         rafId = null;
+        const { clientWidth: w, clientHeight: h } = container;
+        fitModel(w, h);
+      });
+
+      // Heavyweight: resize canvas once after resize events stop
+      if (settleTimer !== null) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        settleTimer = null;
         const app = appRef.current;
         if (!app) return;
         app.resize();
         fitModel(app.screen.width, app.screen.height);
-      });
+      }, 0);
     });
 
     ro.observe(container);
     return () => {
       ro.disconnect();
       if (rafId !== null) cancelAnimationFrame(rafId);
+      if (settleTimer !== null) clearTimeout(settleTimer);
     };
   }, [fitModel]);
 
@@ -246,9 +260,16 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
     model.motion(group, index, 3);
   }, []);
 
+  const playParallelMotion = useCallback((motions: { group: string; index: number }[]) => {
+    const model = modelRef.current;
+    if (!model) return;
+    model.parallelMotion(motions.map(m => ({ ...m, priority: 3 })));
+  }, []);
+
   useImperativeHandle(ref, () => ({
     loadModel,
     playMotion,
+    playParallelMotion,
   }));
 
   return (

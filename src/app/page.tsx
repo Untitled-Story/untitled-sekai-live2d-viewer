@@ -128,22 +128,29 @@ export default function Home() {
     if (!modelInfo) return;
     const sp = shareParamsRef.current;
 
-    if (sp.motion) {
-      const idx = modelInfo.motions.indexOf(sp.motion);
-      if (idx >= 0) {
-        viewerRef.current?.playMotion("Motion", idx);
-        setActiveMotionName(sp.motion);
+    const motionIdx = sp.motion ? modelInfo.motions.indexOf(sp.motion) : -1;
+    const facialIdx = sp.facial ? modelInfo.facials.indexOf(sp.facial) : -1;
+
+    // Both present → parallel motion
+    if (motionIdx >= 0 && facialIdx >= 0) {
+      viewerRef.current?.playParallelMotion([
+        { group: "Motion", index: motionIdx },
+        { group: "Expression", index: facialIdx },
+      ]);
+      setActiveMotionName(sp.motion!);
+      setActiveFacialName(sp.facial!);
+    } else {
+      if (motionIdx >= 0) {
+        viewerRef.current?.playMotion("Motion", motionIdx);
+        setActiveMotionName(sp.motion!);
       }
-      sp.motion = undefined;
-    }
-    if (sp.facial) {
-      const idx = modelInfo.facials.indexOf(sp.facial);
-      if (idx >= 0) {
-        viewerRef.current?.playMotion("Expression", idx);
-        setActiveFacialName(sp.facial);
+      if (facialIdx >= 0) {
+        viewerRef.current?.playMotion("Expression", facialIdx);
+        setActiveFacialName(sp.facial!);
       }
-      sp.facial = undefined;
     }
+    sp.motion = undefined;
+    sp.facial = undefined;
   }, [modelInfo]);
 
   const handleLoadModel = useCallback((model: ModelEntry) => {
@@ -241,6 +248,8 @@ export default function Home() {
         fetchError={fetchError}
         open={sidebarOpen}
         onToggle={handleToggleSidebar}
+        activeMotionName={activeMotionName}
+        activeFacialName={activeFacialName}
       />
       <Viewer
         ref={viewerRef}
