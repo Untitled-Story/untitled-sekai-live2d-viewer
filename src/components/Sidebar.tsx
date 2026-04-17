@@ -78,7 +78,6 @@ export function Sidebar({
     { key: "animation", label: "Animation", icon: Clapperboard, count: animCount || undefined },
   ];
 
-  // Current animation sub-tab items
   const isMotionSub = animSub === "motion";
   const currentItems = isMotionSub ? (modelInfo?.motions ?? []) : (modelInfo?.facials ?? []);
   const currentFilter = isMotionSub ? motionFilter : facialFilter;
@@ -89,109 +88,124 @@ export function Sidebar({
 
   return (
     <aside
-      className={`flex flex-col border-r border-border bg-surface select-none
-        fixed inset-y-0 left-0 z-40 w-[85vw] max-w-80 transition-transform duration-200
-        md:relative md:z-auto md:max-w-80 md:transition-[width] md:duration-200
-        ${open ? "translate-x-0 md:w-80" : "-translate-x-full md:translate-x-0 md:w-0"}
-        overflow-hidden shrink-0`}
+      className={`flex flex-col bg-background select-none overflow-hidden shrink-0
+        fixed inset-y-0 left-0 z-40 w-[85vw] max-w-xs
+        shadow-2xl rounded-r-3xl
+        transition-transform duration-300 ease-[cubic-bezier(.32,.72,0,1)]
+        md:relative md:z-auto md:rounded-none md:shadow-none
+        md:border-r md:border-border
+        md:max-w-sm md:transition-[width] md:duration-200
+        ${open ? "translate-x-0 md:w-80" : "-translate-x-full md:translate-x-0 md:w-0"}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
-        <h1 className="text-base font-semibold tracking-tight whitespace-nowrap">
-          Untitled Sekai Live2D Viewer
+      <div
+        className="flex items-center justify-between px-4 py-3.5 border-b border-border"
+        style={{ paddingTop: "max(0.875rem, env(safe-area-inset-top))" }}
+      >
+        <h1 className="text-sm font-semibold tracking-tight whitespace-nowrap">
+          Sekai Live2D Viewer
         </h1>
         <button
           onClick={onToggle}
-          className="p-1.5 rounded-md hover:bg-surface-hover transition-colors cursor-pointer"
+          className="flex items-center justify-center w-8 h-8 rounded-xl hover:bg-surface transition-colors cursor-pointer text-muted hover:text-foreground"
           aria-label="Close sidebar"
         >
-          <ChevronLeft size={16} />
+          <ChevronLeft size={15} />
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex border-b border-border">
-        {tabs.map(({ key, label, icon: Icon, count }) => (
-          <button
-            key={key}
-            onClick={() => setActiveTab(key)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium transition-colors cursor-pointer ${
-              activeTab === key
-                ? "text-accent border-b-2 border-accent"
-                : "text-muted hover:text-foreground"
-            }`}
-          >
-            <Icon size={12} />
-            {label}
-            {count != null && (
-              <span className="text-[10px] opacity-60">{count}</span>
-            )}
-          </button>
-        ))}
+      {/* Pill tabs */}
+      <div className="px-3 pt-3 pb-1">
+        <div className="flex p-1 bg-surface rounded-2xl">
+          {tabs.map(({ key, label, icon: Icon, count }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer ${
+                activeTab === key
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted hover:text-foreground"
+              }`}
+            >
+              <Icon size={12} />
+              {label}
+              {count != null && (
+                <span className="text-[10px] opacity-50">{count}</span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Tab content */}
-      <div className="flex-1 overflow-hidden flex flex-col">
-        {/* Model tab */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+
+        {/* ── Model tab ── */}
         {activeTab === "model" && (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
             {fetchLoading && (
-              <div className="flex items-center justify-center py-6 text-muted">
-                <Loader2 size={16} className="animate-spin" />
+              <div className="flex items-center justify-center py-10 text-muted">
+                <Loader2 size={18} className="animate-spin" />
               </div>
             )}
 
             {fetchError && (
-              <div className="px-4 py-3">
-                <p className="flex items-center gap-1.5 text-xs text-error">
-                  <AlertCircle size={12} />
+              <div className="mx-3 mt-2 px-4 py-3 bg-error/5 border border-error/20 rounded-2xl">
+                <p className="flex items-center gap-2 text-xs text-error">
+                  <AlertCircle size={14} />
                   {fetchError}
                 </p>
               </div>
             )}
 
             {!fetchLoading && !fetchError && models.length === 0 && (
-              <div className="flex flex-col items-center py-6 text-muted px-4">
-                <Box size={28} strokeWidth={1} />
-                <p className="text-xs mt-2">No models found</p>
+              <div className="flex flex-col items-center py-12 text-muted">
+                <div className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center mb-3">
+                  <Box size={22} strokeWidth={1.5} />
+                </div>
+                <p className="text-xs">No models found</p>
               </div>
             )}
 
             {models.length > 0 && (
               <>
                 {models.length > 5 && (
-                  <div className="px-4 py-2">
+                  <div className="px-3 py-2">
                     <div className="relative">
                       <Search
                         size={14}
-                        className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
                       />
                       <input
-                        type="text"
+                        type="search"
                         value={filter}
                         onChange={(e) => setFilter(e.target.value)}
-                        placeholder="Filter models..."
-                        className="w-full pl-8 pr-2.5 py-1.5 text-sm bg-background border border-border rounded-md outline-none focus:border-accent transition-colors"
+                        placeholder="Search models..."
+                        className="w-full pl-9 pr-3 py-2.5 text-sm bg-surface rounded-full outline-none focus:ring-2 focus:ring-accent/25 transition-all placeholder:text-muted"
                       />
                     </div>
                   </div>
                 )}
 
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto px-2 py-1">
                   {filteredModels.map((model) => {
                     const uid = `${model.path}/${model.file}`;
-                    const isSelected = pendingModel && `${pendingModel.path}/${pendingModel.file}` === uid;
-                    const isLoaded = selectedModel && `${selectedModel.path}/${selectedModel.file}` === uid;
+                    const isSelected =
+                      pendingModel &&
+                      `${pendingModel.path}/${pendingModel.file}` === uid;
+                    const isLoaded =
+                      selectedModel &&
+                      `${selectedModel.path}/${selectedModel.file}` === uid;
                     return (
                       <div
                         key={uid}
                         onClick={() => setPendingModel(model)}
-                        className={`group flex items-center gap-1 w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
+                        className={`group flex items-center gap-2 w-full text-left px-3 py-3 rounded-2xl text-sm transition-all duration-150 cursor-pointer mb-0.5 ${
                           isSelected
                             ? "bg-accent/10 text-accent"
                             : isLoaded
-                              ? "bg-surface-hover"
-                              : "hover:bg-surface-hover"
+                              ? "bg-surface"
+                              : "hover:bg-surface"
                         }`}
                       >
                         <span className="truncate flex-1">{model.name}</span>
@@ -206,7 +220,7 @@ export function Sidebar({
                               setTimeout(() => setCopiedModel(null), 1200);
                             });
                           }}
-                          className="shrink-0 p-1.5 -mr-1 rounded opacity-60 md:opacity-0 md:group-hover:opacity-60 md:hover:!opacity-100 transition-opacity cursor-pointer"
+                          className="shrink-0 p-1.5 rounded-lg opacity-60 md:opacity-0 md:group-hover:opacity-60 md:hover:!opacity-100 transition-opacity cursor-pointer"
                           aria-label={`Copy ${model.name}`}
                         >
                           {copiedModel === uid ? (
@@ -219,11 +233,15 @@ export function Sidebar({
                     );
                   })}
                   {filteredModels.length === 0 && (
-                    <p className="text-sm text-muted px-4 py-2">No matches</p>
+                    <p className="text-xs text-muted px-3 py-3">No matches</p>
                   )}
                 </div>
 
-                <div className="px-4 py-2.5 border-t border-border" style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}>
+                {/* Actions footer */}
+                <div
+                  className="px-3 py-3 border-t border-border"
+                  style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+                >
                   <div className="grid grid-cols-2 gap-2">
                     <button
                       onClick={() => {
@@ -236,7 +254,7 @@ export function Sidebar({
                         }
                       }}
                       disabled={!pendingModel}
-                      className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm font-medium bg-accent text-white rounded-md hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      className="flex items-center justify-center gap-2 w-full h-11 text-sm font-semibold bg-accent text-white rounded-2xl hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                     >
                       <FolderOpen size={14} />
                       Load
@@ -244,7 +262,7 @@ export function Sidebar({
                     <button
                       onClick={onDownloadZip}
                       disabled={!selectedModel || downloadState.status === "loading"}
-                      className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm font-medium border border-border text-foreground rounded-md hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                      className="flex items-center justify-center gap-2 w-full h-11 text-sm font-medium bg-surface text-foreground rounded-2xl hover:bg-surface-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                       aria-label="Download selected model as ZIP"
                     >
                       {downloadState.status === "loading" ? (
@@ -260,8 +278,8 @@ export function Sidebar({
                   <div
                     className={`grid transition-all duration-300 ${
                       downloadState.status === "idle"
-                        ? "mt-0 grid-rows-[0fr] opacity-0 -translate-y-1 ease-in"
-                        : "mt-2 grid-rows-[1fr] opacity-100 translate-y-0 ease-out"
+                        ? "mt-0 grid-rows-[0fr] opacity-0 -translate-y-1"
+                        : "mt-2 grid-rows-[1fr] opacity-100 translate-y-0"
                     }`}
                     aria-live="polite"
                   >
@@ -277,76 +295,82 @@ export function Sidebar({
           </div>
         )}
 
-        {/* Animation tab */}
+        {/* ── Animation tab ── */}
         {activeTab === "animation" && (
-          <div className="flex flex-col h-full">
+          <div className="flex flex-col h-full min-h-0">
             {!modelInfo ? (
-              <div className="flex flex-col items-center py-6 text-muted px-4">
-                <Clapperboard size={28} strokeWidth={1} />
-                <p className="text-xs mt-2">Load a model first</p>
+              <div className="flex flex-col items-center py-12 text-muted">
+                <div className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center mb-3">
+                  <Clapperboard size={22} strokeWidth={1.5} />
+                </div>
+                <p className="text-xs">Load a model first</p>
               </div>
             ) : (
               <>
-                {/* Sub-toggle: Motion / Facial */}
-                <div className="flex mx-4 mt-2 p-0.5 bg-background rounded-md border border-border">
-                  <button
-                    onClick={() => { setAnimSub("motion"); setCopiedIndex(null); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded transition-colors cursor-pointer ${
-                      animSub === "motion"
-                        ? "bg-surface-hover text-foreground"
-                        : "text-muted hover:text-foreground"
-                    }`}
-                  >
-                    <Play size={11} />
-                    Motion
-                    {motionCount > 0 && (
-                      <span className="text-[10px] opacity-60">{motionCount}</span>
-                    )}
-                  </button>
-                  <button
-                    onClick={() => { setAnimSub("facial"); setCopiedIndex(null); }}
-                    className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium rounded transition-colors cursor-pointer ${
-                      animSub === "facial"
-                        ? "bg-surface-hover text-foreground"
-                        : "text-muted hover:text-foreground"
-                    }`}
-                  >
-                    <Smile size={11} />
-                    Facial
-                    {facialCount > 0 && (
-                      <span className="text-[10px] opacity-60">{facialCount}</span>
-                    )}
-                  </button>
+                {/* Motion / Facial sub-toggle */}
+                <div className="px-3 pt-2 pb-1">
+                  <div className="flex p-1 bg-surface rounded-2xl">
+                    <button
+                      onClick={() => { setAnimSub("motion"); setCopiedIndex(null); }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer ${
+                        animSub === "motion"
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted hover:text-foreground"
+                      }`}
+                    >
+                      <Play size={11} />
+                      Motion
+                      {motionCount > 0 && (
+                        <span className="text-[10px] opacity-50">{motionCount}</span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => { setAnimSub("facial"); setCopiedIndex(null); }}
+                      className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium rounded-xl transition-all duration-200 cursor-pointer ${
+                        animSub === "facial"
+                          ? "bg-background text-foreground shadow-sm"
+                          : "text-muted hover:text-foreground"
+                      }`}
+                    >
+                      <Smile size={11} />
+                      Facial
+                      {facialCount > 0 && (
+                        <span className="text-[10px] opacity-50">{facialCount}</span>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {currentItems.length === 0 ? (
-                  <div className="flex flex-col items-center py-6 text-muted px-4">
-                    {isMotionSub ? <Play size={28} strokeWidth={1} /> : <Smile size={28} strokeWidth={1} />}
-                    <p className="text-xs mt-2">
+                  <div className="flex flex-col items-center py-12 text-muted">
+                    <div className="w-12 h-12 rounded-2xl bg-surface flex items-center justify-center mb-3">
+                      {isMotionSub
+                        ? <Play size={22} strokeWidth={1.5} />
+                        : <Smile size={22} strokeWidth={1.5} />}
+                    </div>
+                    <p className="text-xs">
                       No {isMotionSub ? "motions" : "facials"} available
                     </p>
                   </div>
                 ) : (
                   <>
-                    {/* Filter */}
-                    <div className="px-4 py-2">
+                    <div className="px-3 py-2">
                       <div className="relative">
                         <Search
                           size={14}
-                          className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
                         />
                         <input
-                          type="text"
+                          type="search"
                           value={currentFilter}
                           onChange={(e) => setCurrentFilter(e.target.value)}
-                          placeholder={`Filter ${isMotionSub ? "motions" : "facials"}...`}
-                          className="w-full pl-8 pr-2.5 py-1.5 text-sm bg-background border border-border rounded-md outline-none focus:border-accent transition-colors"
+                          placeholder={`Search ${isMotionSub ? "motions" : "facials"}...`}
+                          className="w-full pl-9 pr-3 py-2.5 text-sm bg-surface rounded-full outline-none focus:ring-2 focus:ring-accent/25 transition-all placeholder:text-muted"
                         />
                       </div>
                     </div>
 
-                    {/* List */}
-                    <div className="flex-1 overflow-y-auto">
+                    <div className="flex-1 overflow-y-auto px-2 py-1">
                       {currentItems
                         .map((name, i) => ({ name, index: i }))
                         .filter(({ name }) => matchesFilter(name, currentFilter))
@@ -354,10 +378,10 @@ export function Sidebar({
                           <div
                             key={index}
                             onClick={() => setCurrentSelected(index)}
-                            className={`group flex items-center gap-1 w-full text-left px-4 py-2 text-sm transition-colors cursor-pointer ${
+                            className={`group flex items-center gap-2 w-full text-left px-3 py-3 rounded-2xl text-sm transition-all duration-150 cursor-pointer mb-0.5 ${
                               currentSelected === index
                                 ? "bg-accent/10 text-accent"
-                                : "hover:bg-surface-hover"
+                                : "hover:bg-surface"
                             }`}
                           >
                             <span className="truncate flex-1">{name}</span>
@@ -369,7 +393,7 @@ export function Sidebar({
                                   setTimeout(() => setCopiedIndex(null), 1200);
                                 });
                               }}
-                              className="shrink-0 p-1.5 -mr-1 rounded opacity-60 md:opacity-0 md:group-hover:opacity-60 md:hover:!opacity-100 transition-opacity cursor-pointer"
+                              className="shrink-0 p-1.5 rounded-lg opacity-60 md:opacity-0 md:group-hover:opacity-60 md:hover:!opacity-100 transition-opacity cursor-pointer"
                               aria-label={`Copy ${name}`}
                             >
                               {copiedIndex === index ? (
@@ -382,14 +406,20 @@ export function Sidebar({
                         ))}
                     </div>
 
-                    {/* Play button */}
-                    <div className="px-4 py-2.5 border-t border-border" style={{ paddingBottom: "max(0.625rem, env(safe-area-inset-bottom))" }}>
+                    {/* Play footer */}
+                    <div
+                      className="px-3 py-3 border-t border-border"
+                      style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+                    >
                       <button
                         onClick={() => {
-                          if (currentSelected >= 0) onApplyMotion(playGroup, currentSelected);
+                          if (currentSelected >= 0) {
+                            onApplyMotion(playGroup, currentSelected);
+                            if (window.innerWidth < 768) onToggle();
+                          }
                         }}
                         disabled={currentSelected < 0}
-                        className="flex items-center justify-center gap-2 w-full px-3 py-2 text-sm font-medium border border-accent text-accent rounded-md hover:bg-accent/10 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
+                        className="flex items-center justify-center gap-2 w-full h-11 text-sm font-semibold bg-accent text-white rounded-2xl hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                       >
                         {isMotionSub ? <Play size={14} /> : <Smile size={14} />}
                         Play

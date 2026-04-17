@@ -79,27 +79,40 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
     };
   }, []);
 
-  // Refit model on any container resize (sidebar toggle, window resize, etc.)
+  // Shared fit helper — reads refs directly so it's always fresh
+  const fitModel = useCallback((_sw: number, sh: number) => {
+    const model = modelRef.current;
+    if (!model || sh === 0) return;
+    const scale = (sh / model.internalModel.originalHeight) * 2.1;
+    model.scale.set(scale);
+    model.x = _sw / 2;
+    model.y = sh * (0.5 + 0.3);
+  }, []);
+
+  // Refit model on container resize — debounced to one rAF per burst
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    const refit = () => {
-      const app = appRef.current;
-      const model = modelRef.current;
-      const size = originalSizeRef.current;
-      if (!app || !model || !size) return;
-      app.resize();
-      const scale =
-        Math.min(app.screen.width / size.w, app.screen.height / size.h) * 0.95;
-      model.scale.set(scale);
-      model.position.set(app.screen.width / 2, app.screen.height / 2);
-    };
+    let rafId: number | null = null;
 
-    const ro = new ResizeObserver(() => refit());
+    const ro = new ResizeObserver(() => {
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const app = appRef.current;
+        if (!app) return;
+        app.resize();
+        fitModel(app.screen.width, app.screen.height);
+      });
+    });
+
     ro.observe(container);
-    return () => ro.disconnect();
-  }, []);
+    return () => {
+      ro.disconnect();
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, [fitModel]);
 
   const loadModel = useCallback(
     async (entry: ModelEntry) => {
@@ -109,7 +122,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
       setModelLoading(true);
       setModelError(null);
 
-      // Destroy previous model
       if (modelRef.current) {
         try {
           modelRef.current.destroy();
@@ -125,7 +137,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
 
         const modelJsonUrl = `${serverUrl}/model/${entry.path}/${entry.file}`;
 
-        // Step 1: Fetch model3.json
         const res = await fetch(modelJsonUrl);
         if (!res.ok) { // noinspection ExceptionCaughtLocallyJS
           throw new Error(`Failed to fetch model: HTTP ${res.status}`);
@@ -133,15 +144,12 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const model3Json: any = await res.json();
 
-        // Step 2: Resolve motion data
         const motionData = await resolveMotionData(serverUrl, entry);
 
-        // Step 3: Build FileReferences.Motions
         if (!model3Json.FileReferences) model3Json.FileReferences = {};
 
         const motionEntries: Record<string, Array<{ File: string }>> = {};
 
-        // Motion group: base motions + additional motions
         const motionFiles: Array<{ File: string }> = [];
         for (const name of motionData.motions) {
           motionFiles.push({
@@ -157,7 +165,6 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
           motionEntries["Motion"] = motionFiles;
         }
 
-        // Expression group: facials from motion base
         const facialFiles: Array<{ File: string }> = [];
         for (const name of motionData.facials) {
           facialFiles.push({
@@ -169,47 +176,27 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         }
 
         model3Json.FileReferences.Motions = motionEntries;
-
-        // Clear Expressions to avoid conflicts
         delete model3Json.FileReferences.Expressions;
-
-        // Step 4: Set base URL for model resources
         model3Json.url = `${serverUrl}/model/${entry.path}/`;
 
-        // Step 5: Load model from JSON object
         const live2dModel = await Live2DModel.from(model3Json, {
           autoFocus: false,
           autoHitTest: false,
           breathDepth: 0.3
         });
 
-        // Save original dimensions for resize calculations
-        originalSizeRef.current = {
-          w: live2dModel.width,
-          h: live2dModel.height,
-        };
+        const naturalW = live2dModel.width;
+        const naturalH = live2dModel.height;
+        originalSizeRef.current = { w: naturalW, h: naturalH };
 
-        // Sync canvas size before positioning
-        app.resize();
-
-        // Center and fit
-        const scale =
-          Math.min(
-            app.screen.width / live2dModel.width,
-            app.screen.height / live2dModel.height
-          ) * 0.95;
-
-        live2dModel.scale.set(scale);
         live2dModel.anchor.set(0.5);
-        live2dModel.position.set(
-          app.screen.width / 2,
-          app.screen.height / 2
-        );
 
         app.stage.addChild(live2dModel);
         modelRef.current = live2dModel;
 
-        // Build motion/facial name lists
+        app.resize();
+        fitModel(app.screen.width, app.screen.height);
+
         const motionNames = [
           ...motionData.motions,
           ...motionData.additionalMotions,
@@ -240,37 +227,39 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
   }));
 
   return (
-    <main className="flex-1 relative bg-background min-w-0 select-none">
-      {/* Toggle sidebar — always visible on mobile, only when closed on desktop */}
+    <main className="flex-1 relative bg-surface min-w-0 select-none">
+      {/* Toggle sidebar button */}
       <button
         onClick={onToggleSidebar}
-        className={`absolute top-3 left-3 z-10 p-2.5 rounded-md bg-surface border border-border hover:bg-surface-hover transition-colors cursor-pointer ${
+        className={`absolute z-10 flex items-center justify-center w-10 h-10 rounded-2xl bg-background shadow-md border border-border/60 hover:shadow-lg hover:bg-surface transition-all duration-200 cursor-pointer ${
           sidebarOpen ? "md:hidden" : ""
         }`}
-        style={{ top: "max(0.75rem, env(safe-area-inset-top))" }}
+        style={{
+          top: "max(0.75rem, env(safe-area-inset-top))",
+          left: "0.75rem",
+        }}
         aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
       >
         <PanelLeft size={16} />
       </button>
 
-      {/* Canvas */}
+      {/* Canvas — soft dot-grid background */}
       <div
         ref={containerRef}
         className="w-full h-full"
         style={{
-          backgroundImage:
-            "linear-gradient(45deg, var(--border) 25%, transparent 25%, transparent 75%, var(--border) 75%), linear-gradient(45deg, var(--border) 25%, transparent 25%, transparent 75%, var(--border) 75%)",
-          backgroundSize: "20px 20px",
-          backgroundPosition: "0 0, 10px 10px",
+          backgroundColor: "var(--background)",
+          backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)",
+          backgroundSize: "24px 24px",
         }}
       />
 
       {/* Loading overlay */}
       {modelLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-background/60 backdrop-blur-sm">
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-border">
+        <div className="absolute inset-0 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+          <div className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-background shadow-xl border border-border/50">
             <Loader2 size={16} className="animate-spin text-accent" />
-            <span className="text-sm">Loading model...</span>
+            <span className="text-sm font-medium">Loading model…</span>
           </div>
         </div>
       )}
@@ -278,8 +267,8 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
       {/* Error overlay */}
       {modelError && (
         <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-surface border border-error/30">
-            <AlertCircle size={16} className="text-error" />
+          <div className="flex items-center gap-3 px-5 py-3.5 rounded-2xl bg-background shadow-xl border border-error/20 max-w-xs mx-4">
+            <AlertCircle size={16} className="text-error shrink-0" />
             <span className="text-sm text-error">{modelError}</span>
           </div>
         </div>
@@ -292,7 +281,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         </div>
       )}
 
-      {/* Screenshot button */}
+      {/* Bottom-right: screenshot button */}
       {selectedModel && !modelLoading && !modelError && (
         <button
           onClick={() => {
@@ -309,15 +298,18 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
               URL.revokeObjectURL(url);
             }, "image/png");
           }}
-          className="absolute bottom-3 right-3 p-2.5 rounded-md bg-surface/80 backdrop-blur-sm border border-border text-muted hover:bg-surface hover:text-foreground transition-colors cursor-pointer"
-          style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          className="absolute flex items-center justify-center w-10 h-10 rounded-2xl bg-background/90 backdrop-blur-sm shadow-md border border-border/50 text-muted hover:bg-background hover:text-foreground hover:shadow-lg transition-all duration-200 cursor-pointer"
+          style={{
+            bottom: "max(0.75rem, env(safe-area-inset-bottom))",
+            right: "0.75rem",
+          }}
           aria-label="Screenshot"
         >
           <Camera size={16} />
         </button>
       )}
 
-      {/* Model info badge — click to copy */}
+      {/* Bottom-left: model name badge */}
       {selectedModel && !modelLoading && !modelError && (
         <button
           onClick={() => {
@@ -326,8 +318,11 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
               setTimeout(() => setCopied(false), 1500);
             });
           }}
-          className="absolute bottom-3 left-3 px-3 py-1.5 rounded-md bg-surface/80 backdrop-blur-sm border border-border text-xs text-muted hover:bg-surface transition-colors cursor-pointer"
-          style={{ bottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
+          className="absolute px-3.5 py-2 rounded-full bg-background/90 backdrop-blur-sm shadow-md border border-border/50 text-xs text-muted hover:bg-background hover:text-foreground hover:shadow-lg transition-all duration-200 cursor-pointer max-w-[calc(100%-5rem)] truncate"
+          style={{
+            bottom: "max(0.75rem, env(safe-area-inset-bottom))",
+            left: "0.75rem",
+          }}
         >
           {copied ? "Copied!" : selectedModel.name}
         </button>

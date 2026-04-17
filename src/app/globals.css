@@ -4,7 +4,7 @@
   --background: #ffffff;
   --foreground: #09090b;
   --surface: #f4f4f5;
-  --surface-hover: #e4e4e7;
+  --surface-hover: #e9e9eb;
   --border: #e4e4e7;
   --border-hover: #d4d4d8;
   --muted: #71717a;
@@ -58,14 +58,14 @@ body {
 }
 
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 3px;
+  border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: var(--border-hover);
