@@ -8,7 +8,7 @@ import {
   useImperativeHandle,
   forwardRef,
 } from "react";
-import { PanelLeft, Loader2, AlertCircle, Camera } from "lucide-react";
+import { PanelLeft, Loader2, AlertCircle, Camera, Share2, Check } from "lucide-react";
 import type { ModelEntry, ModelInfo } from "@/app/page";
 import { resolveMotionData } from "@/lib/motion";
 
@@ -23,22 +23,46 @@ interface ViewerProps {
   serverUrl: string;
   onToggleSidebar: () => void;
   onModelLoaded: (info: ModelInfo) => void;
+  onReady: () => void;
   selectedModel: ModelEntry | null;
   sidebarOpen: boolean;
+  activeMotionName: string | null;
+  activeFacialName: string | null;
 }
 
 export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
-  { serverUrl, onToggleSidebar, onModelLoaded, selectedModel, sidebarOpen },
+  {
+    serverUrl,
+    onToggleSidebar,
+    onModelLoaded,
+    onReady,
+    selectedModel,
+    sidebarOpen,
+    activeMotionName,
+    activeFacialName,
+  },
   ref
 ) {
   const containerRef = useRef<HTMLDivElement>(null);
   const appRef = useRef<import("pixi.js").Application | null>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const modelRef = useRef<Live2DModel | null>(null);
   const originalSizeRef = useRef<{ w: number; h: number } | null>(null);
   const [modelLoading, setModelLoading] = useState(false);
   const [modelError, setModelError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = useCallback(() => {
+    if (!selectedModel) return;
+    const url = new URL(window.location.href.split("?")[0]);
+    url.searchParams.set("model", selectedModel.name);
+    if (activeMotionName) url.searchParams.set("motion", activeMotionName);
+    if (activeFacialName) url.searchParams.set("facial", activeFacialName);
+    navigator.clipboard.writeText(url.toString()).then(() => {
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 1500);
+    });
+  }, [selectedModel, activeMotionName, activeFacialName]);
 
   // Initialize PixiJS
   useEffect(() => {
@@ -66,6 +90,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
       }
       container!.appendChild(app.canvas);
       appRef.current = app;
+      onReady();
     }
 
     init();
@@ -77,7 +102,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         appRef.current = null;
       }
     };
-  }, []);
+  }, [onReady]);
 
   // Shared fit helper — reads refs directly so it's always fresh
   const fitModel = useCallback((_sw: number, sh: number) => {
@@ -212,7 +237,7 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
         setModelLoading(false);
       }
     },
-    [serverUrl, onModelLoaded]
+    [fitModel, serverUrl, onModelLoaded]
   );
 
   const playMotion = useCallback((group: string, index: number) => {
@@ -306,6 +331,21 @@ export const Viewer = forwardRef<ViewerHandle, ViewerProps>(function Viewer(
           aria-label="Screenshot"
         >
           <Camera size={16} />
+        </button>
+      )}
+
+      {/* Bottom-right: share button */}
+      {selectedModel && !modelLoading && !modelError && (
+        <button
+          onClick={handleShare}
+          className="absolute flex items-center justify-center w-10 h-10 rounded-2xl bg-background/90 backdrop-blur-sm shadow-md border border-border/50 text-muted hover:bg-background hover:text-foreground hover:shadow-lg transition-all duration-200 cursor-pointer"
+          style={{
+            bottom: "max(0.75rem, env(safe-area-inset-bottom))",
+            right: "3.75rem",
+          }}
+          aria-label="Share link"
+        >
+          {shareCopied ? <Check size={16} className="text-success" /> : <Share2 size={16} />}
         </button>
       )}
 

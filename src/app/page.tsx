@@ -34,6 +34,17 @@ export interface DownloadState {
   message?: string;
 }
 
+/** Read share params from URL once */
+function getShareParams(): { model?: string; motion?: string; facial?: string } {
+  if (typeof window === "undefined") return {};
+  const p = new URLSearchParams(window.location.search);
+  return {
+    model: p.get("model") ?? undefined,
+    motion: p.get("motion") ?? undefined,
+    facial: p.get("facial") ?? undefined,
+  };
+}
+
 export default function Home() {
   const [models, setModels] = useState<ModelEntry[]>([]);
   const [selectedModel, setSelectedModel] = useState<ModelEntry | null>(null);
@@ -45,12 +56,29 @@ export default function Home() {
     status: "idle",
   });
 
-  // Open sidebar by default on desktop
+  // Share params — consumed once then cleared
+  const shareParamsRef = useRef(getShareParams());
+  const shareConsumedRef = useRef(false);
+  const [viewerReady, setViewerReady] = useState(false);
+
+  // Open sidebar by default on desktop (skip if share link — keep sidebar closed)
   useEffect(() => {
-    if (window.innerWidth >= 768) setSidebarOpen(true);
+    if (window.innerWidth >= 768 && !shareParamsRef.current.model) setSidebarOpen(true);
   }, []);
 
   const viewerRef = useRef<ViewerHandle>(null);
+
+  const handleViewerReady = useCallback(() => {
+    setViewerReady(true);
+  }, []);
+
+  const handleSetSidebarOpen = useCallback((nextOpen: boolean) => {
+    setSidebarOpen(nextOpen);
+  }, []);
+
+  const handleToggleSidebar = useCallback(() => {
+    setSidebarOpen((current) => !current);
+  }, []);
 
   // Fetch models on mount
   useEffect(() => {
@@ -76,19 +104,68 @@ export default function Home() {
     fetchModels();
   }, []);
 
+  // Auto-load model from share link after models fetched AND viewer ready
+  useEffect(() => {
+    const sp = shareParamsRef.current;
+    if (shareConsumedRef.current || !sp.model || models.length === 0 || !viewerReady) return;
+    shareConsumedRef.current = true;
+
+    const match = models.find((m) => m.name === sp.model);
+    if (!match) return;
+
+    setSelectedModel(match);
+    setModelInfo(null);
+    viewerRef.current?.loadModel(match);
+    window.history.replaceState(null, "", window.location.pathname);
+  }, [models, viewerReady]);
+
   const handleModelLoaded = useCallback((info: ModelInfo) => {
     setModelInfo(info);
   }, []);
 
+  // Auto-play motion/facial from share link after model info arrives
+  useEffect(() => {
+    if (!modelInfo) return;
+    const sp = shareParamsRef.current;
+
+    if (sp.motion) {
+      const idx = modelInfo.motions.indexOf(sp.motion);
+      if (idx >= 0) {
+        viewerRef.current?.playMotion("Motion", idx);
+        setActiveMotionName(sp.motion);
+      }
+      sp.motion = undefined;
+    }
+    if (sp.facial) {
+      const idx = modelInfo.facials.indexOf(sp.facial);
+      if (idx >= 0) {
+        viewerRef.current?.playMotion("Expression", idx);
+        setActiveFacialName(sp.facial);
+      }
+      sp.facial = undefined;
+    }
+  }, [modelInfo]);
+
   const handleLoadModel = useCallback((model: ModelEntry) => {
     setSelectedModel(model);
     setModelInfo(null);
+    setActiveMotionName(null);
+    setActiveFacialName(null);
     viewerRef.current?.loadModel(model);
   }, []);
 
+  // Track last-played motion/facial by name for share links
+  const [activeMotionName, setActiveMotionName] = useState<string | null>(null);
+  const [activeFacialName, setActiveFacialName] = useState<string | null>(null);
+
   const handleApplyMotion = useCallback((group: string, index: number) => {
     viewerRef.current?.playMotion(group, index);
-  }, []);
+    if (group === "Motion" && modelInfo?.motions[index]) {
+      setActiveMotionName(modelInfo.motions[index]);
+    } else if (group === "Expression" && modelInfo?.facials[index]) {
+      setActiveFacialName(modelInfo.facials[index]);
+    }
+  }, [modelInfo]);
 
   const handleDownloadZip = useCallback(async () => {
     if (!selectedModel) return;
@@ -149,7 +226,7 @@ export default function Home() {
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-black/40 md:hidden"
-          onClick={() => setSidebarOpen(false)}
+          onClick={() => handleSetSidebarOpen(false)}
         />
       )}
       <Sidebar
@@ -163,15 +240,18 @@ export default function Home() {
         fetchLoading={fetchLoading}
         fetchError={fetchError}
         open={sidebarOpen}
-        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        onToggle={handleToggleSidebar}
       />
       <Viewer
         ref={viewerRef}
         serverUrl={SERVER_URL}
         sidebarOpen={sidebarOpen}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+        onToggleSidebar={handleToggleSidebar}
         onModelLoaded={handleModelLoaded}
+        onReady={handleViewerReady}
         selectedModel={selectedModel}
+        activeMotionName={activeMotionName}
+        activeFacialName={activeFacialName}
       />
     </div>
   );
