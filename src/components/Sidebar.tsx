@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Loader2,
   AlertCircle,
@@ -76,9 +76,16 @@ export function Sidebar({
   }, [selectedModel]);
 
   // Sync sidebar selection from share link / external state
+  const prevMotionName = useRef(activeMotionName);
+  const prevFacialName = useRef(activeFacialName);
   useEffect(() => {
     if (!modelInfo) return;
-    if (activeMotionName) {
+    const motionChanged = activeMotionName !== prevMotionName.current;
+    const facialChanged = activeFacialName !== prevFacialName.current;
+    prevMotionName.current = activeMotionName;
+    prevFacialName.current = activeFacialName;
+
+    if (activeMotionName && motionChanged) {
       const idx = modelInfo.motions.indexOf(activeMotionName);
       if (idx >= 0) {
         setSelectedMotion(idx);
@@ -86,7 +93,7 @@ export function Sidebar({
         setAnimSub("motion");
       }
     }
-    if (activeFacialName) {
+    if (activeFacialName && facialChanged) {
       const idx = modelInfo.facials.indexOf(activeFacialName);
       if (idx >= 0) {
         setSelectedFacial(idx);
@@ -132,8 +139,8 @@ export function Sidebar({
         className="flex items-center justify-between px-4 py-3.5 border-b border-border"
         style={{ paddingTop: "max(0.875rem, env(safe-area-inset-top))" }}
       >
-        <h1 className="text-sm font-semibold tracking-tight whitespace-nowrap">
-          Sekai Live2D Viewer
+        <h1 className="text-base font-semibold tracking-tight whitespace-nowrap">
+          Untitled Sekai Live2D Viewer
         </h1>
         <button
           onClick={onToggle}
