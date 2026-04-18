@@ -33,8 +33,8 @@ importers:
         specifier: 19.2.4
         version: 19.2.4(react@19.2.4)
       untitled-pixi-live2d-engine:
-        specifier: ^1.0.1
-        version: 1.0.1(@pixi/sound@6.0.1(pixi.js@8.17.1))(pixi.js@8.17.1)
+        specifier: ^1.0.2
+        version: 1.0.2(@pixi/sound@6.0.1(pixi.js@8.17.1))(pixi.js@8.17.1)
     devDependencies:
       '@tailwindcss/postcss':
         specifier: ^4
@@ -1991,8 +1991,8 @@ packages:
   unrs-resolver@1.11.1:
     resolution: {integrity: sha512-bSjt9pjaEBnNiGgc9rUiHGKv5l4/TGzDmYw3RhnkJGtLhbnnA/5qJj7x3dNDCRx/PJxu774LlH8lCOlB4hEfKg==}
 
-  untitled-pixi-live2d-engine@1.0.1:
-    resolution: {integrity: sha512-feTQ5Rd2+eGiaov2EgDS+a6WVWmSDSUxkKKTAKuM9QF3d0topuqsqHWXO/8i9E+/4m9l8R9vOvF9JLGdayfp3g==}
+  untitled-pixi-live2d-engine@1.0.2:
+    resolution: {integrity: sha512-gL1Ep/7SpOIM1fx+GZYKF0iuStGlSRs85T8OZseTkYYs6WE3tdjU5IiIN+W3kqBWMtu2Sl0ycG931eUkinzMYA==}
     peerDependencies:
       '@pixi/sound': ^6.0.1
       pixi.js: ^8.13.1
@@ -4155,7 +4155,7 @@ snapshots:
       '@unrs/resolver-binding-win32-ia32-msvc': 1.11.1
       '@unrs/resolver-binding-win32-x64-msvc': 1.11.1
 
-  untitled-pixi-live2d-engine@1.0.1(@pixi/sound@6.0.1(pixi.js@8.17.1))(pixi.js@8.17.1):
+  untitled-pixi-live2d-engine@1.0.2(@pixi/sound@6.0.1(pixi.js@8.17.1))(pixi.js@8.17.1):
     dependencies:
       '@pixi/sound': 6.0.1(pixi.js@8.17.1)
       pixi.js: 8.17.1
